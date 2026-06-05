@@ -1,0 +1,39 @@
+from dotenv import load_dotenv
+import os
+
+from datetime import datetime, timedelta
+
+from integrate import (
+    ConnectToIntegrate,
+    IntegrateData
+)
+
+load_dotenv()
+
+conn = ConnectToIntegrate()
+
+conn.login(
+    api_token=os.getenv("API_TOKEN"),
+    api_secret=os.getenv("API_SECRET")
+)
+
+data = IntegrateData(conn)
+
+start = datetime.now() - timedelta(days=5)
+end = datetime.now()
+
+candles = data.historical_data(
+    exchange="NFO",
+    trading_symbol="BANKNIFTY26MAY26F",
+    timeframe="MIN",
+    start=start,
+    end=end
+)
+
+for i, candle in enumerate(candles):
+    print(candle)
+
+    if i >= 10:
+        break
+
+

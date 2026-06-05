@@ -1,0 +1,148 @@
+{
+  "rules": [
+    {
+      "rule_id": "S1644",
+      "checkpoint_minute": 15,
+      "rule": "recent_opposite_rate_bucket=Q1_LOW & range_speed_bucket=Q4_HIGH & directional_efficiency_bucket=Q4_HIGH",
+      "sessions": 60,
+      "pct_50_before_opposite": 93.33333333333331,
+      "pct_100_before_opposite": 81.66666666666667,
+      "pct_opposite_break": 8.333333333333332,
+      "edge_score": 100.69737816285574,
+      "median_minutes_to_50": 9.5,
+      "median_minutes_to_100": 40.0
+    },
+    {
+      "rule_id": "S0695",
+      "checkpoint_minute": 5,
+      "rule": "recent_opposite_rate_bucket=Q1_LOW & range_speed_bucket=Q4_HIGH",
+      "sessions": 153,
+      "pct_50_before_opposite": 89.54248366013073,
+      "pct_100_before_opposite": 77.77777777777779,
+      "pct_opposite_break": 11.11111111111111,
+      "edge_score": 98.45382313431544,
+      "median_minutes_to_50": 8.0,
+      "median_minutes_to_100": 28.0
+    },
+    {
+      "rule_id": "S1096",
+      "checkpoint_minute": 15,
+      "rule": "range_speed_bucket=Q4_HIGH & directional_efficiency_bucket=Q2 & gap_direction=DOWN",
+      "sessions": 69,
+      "pct_50_before_opposite": 89.85507246376811,
+      "pct_100_before_opposite": 78.26086956521739,
+      "pct_opposite_break": 8.695652173913043,
+      "edge_score": 95.25551547371867,
+      "median_minutes_to_50": 6.0,
+      "median_minutes_to_100": 19.0
+    },
+    {
+      "rule_id": "S0679",
+      "checkpoint_minute": 3,
+      "rule": "recent_opposite_rate_bucket=Q1_LOW & range_speed_bucket=Q4_HIGH",
+      "sessions": 152,
+      "pct_50_before_opposite": 89.47368421052632,
+      "pct_100_before_opposite": 75.6578947368421,
+      "pct_opposite_break": 12.5,
+      "edge_score": 92.1223295604799,
+      "median_minutes_to_50": 8.0,
+      "median_minutes_to_100": 29.5
+    },
+    {
+      "rule_id": "S1019",
+      "checkpoint_minute": 3,
+      "rule": "range_speed_bucket=Q4_HIGH & directional_efficiency_bucket=Q1_LOW & gap_direction=DOWN",
+      "sessions": 61,
+      "pct_50_before_opposite": 90.1639344262295,
+      "pct_100_before_opposite": 78.68852459016394,
+      "pct_opposite_break": 11.475409836065571,
+      "edge_score": 91.86410158014586,
+      "median_minutes_to_50": 4.0,
+      "median_minutes_to_100": 32.5
+    },
+    {
+      "rule_id": "S1404",
+      "checkpoint_minute": 15,
+      "rule": "gap_direction=DOWN & opening_direction=DOWN & range_speed_bucket=Q4_HIGH",
+      "sessions": 152,
+      "pct_50_before_opposite": 90.13157894736842,
+      "pct_100_before_opposite": 76.31578947368422,
+      "pct_opposite_break": 14.473684210526317,
+      "edge_score": 91.4214015467446,
+      "median_minutes_to_50": 8.0,
+      "median_minutes_to_100": 29.5
+    },
+    {
+      "rule_id": "S0711",
+      "checkpoint_minute": 10,
+      "rule": "recent_opposite_rate_bucket=Q1_LOW & range_speed_bucket=Q4_HIGH",
+      "sessions": 163,
+      "pct_50_before_opposite": 87.73006134969326,
+      "pct_100_before_opposite": 74.84662576687117,
+      "pct_opposite_break": 12.883435582822086,
+      "edge_score": 88.93864991002988,
+      "median_minutes_to_50": 8.0,
+      "median_minutes_to_100": 28.0
+    },
+    {
+      "rule_id": "S1183",
+      "checkpoint_minute": 5,
+      "rule": "range_speed_bucket=Q4_HIGH & directional_efficiency_bucket=Q3 & opening_direction=DOWN",
+      "sessions": 88,
+      "pct_50_before_opposite": 89.77272727272727,
+      "pct_100_before_opposite": 78.4090909090909,
+      "pct_opposite_break": 17.045454545454543,
+      "edge_score": 88.92527520565348,
+      "median_minutes_to_50": 3.5,
+      "median_minutes_to_100": 18.0
+    },
+    {
+      "rule_id": "S0235",
+      "checkpoint_minute": 3,
+      "rule": "range_speed_bucket=Q4_HIGH & directional_efficiency_bucket=Q4_HIGH",
+      "sessions": 221,
+      "pct_50_before_opposite": 83.710407239819,
+      "pct_100_before_opposite": 74.2081447963801,
+      "pct_opposite_break": 9.95475113122172,
+      "edge_score": 88.3062260978453,
+      "median_minutes_to_50": 9.0,
+      "median_minutes_to_100": 29.5
+    },
+    {
+      "rule_id": "S0743",
+      "checkpoint_minute": 30,
+      "rule": "recent_opposite_rate_bucket=Q1_LOW & range_speed_bucket=Q4_HIGH",
+      "sessions": 175,
+      "pct_50_before_opposite": 88.57142857142857,
+      "pct_100_before_opposite": 73.14285714285714,
+      "pct_opposite_break": 13.142857142857142,
+      "edge_score": 87.29394937559526,
+      "median_minutes_to_50": 8.0,
+      "median_minutes_to_100": 28.0
+    },
+    {
+      "rule_id": "S1122",
+      "checkpoint_minute": 30,
+      "rule": "range_speed_bucket=Q4_HIGH & directional_efficiency_bucket=Q2 & gap_direction=DOWN",
+      "sessions": 77,
+      "pct_50_before_opposite": 90.9090909090909,
+      "pct_100_before_opposite": 72.72727272727273,
+      "pct_opposite_break": 6.493506493506493,
+      "edge_score": 87.20785629001813,
+      "median_minutes_to_50": 7.5,
+      "median_minutes_to_100": 26.5
+    },
+    {
+      "rule_id": "S1239",
+      "checkpoint_minute": 15,
+      "rule": "range_speed_bucket=Q4_HIGH & directional_efficiency_bucket=Q2 & opening_direction=DOWN",
+      "sessions": 74,
+      "pct_50_before_opposite": 91.8918918918919,
+      "pct_100_before_opposite": 78.37837837837837,
+      "pct_opposite_break": 17.56756756756757,
+      "edge_score": 87.15398185987539,
+      "median_minutes_to_50": 6.0,
+      "median_minutes_to_100": 21.0
+    }
+  ]
+}
