@@ -18,6 +18,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--start", type=str, default=None, help="Start date YYYY-MM-DD")
     parser.add_argument("--end", type=str, default=None, help="End date YYYY-MM-DD")
     parser.add_argument("--last", type=int, default=20, help="Print last N signals")
+    parser.add_argument(
+        "--walkforward",
+        action="store_true",
+        help="Use walk-forward quartile buckets (no look-ahead; required for backtests)",
+    )
+    parser.add_argument(
+        "--walkforward-window",
+        type=int,
+        default=252,
+        help="Trailing sessions for walk-forward bucket reference",
+    )
     parser.add_argument("--all-matches", action="store_true", help="Emit all rule matches per checkpoint")
     parser.add_argument("--output", type=Path, default=None, help="Optional CSV output path")
     return parser.parse_args()
@@ -30,13 +41,18 @@ def signals_to_frame(signals: list) -> pd.DataFrame:
             {
                 "date": signal.date,
                 "checkpoint_minute": signal.checkpoint_minute,
+                "checkpoint_clock": signal.checkpoint_clock,
                 "checkpoint_time": signal.checkpoint_time,
                 "rule_id": signal.rule_id,
+                "source_rule_id": signal.source_rule_id,
+                "stable_id": signal.stable_id,
+                "timeframe": signal.timeframe,
                 "side": signal.side,
                 "direction": signal.direction,
                 "confidence": signal.confidence,
                 "entry_price": signal.entry_price,
                 "entry_trigger": signal.entry_trigger,
+                "required_break_direction": signal.required_break_direction,
                 "target_50": signal.target_50,
                 "target_100": signal.target_100,
                 "stop_price": signal.stop_price,
@@ -55,7 +71,10 @@ def signals_to_frame(signals: list) -> pd.DataFrame:
 def main() -> None:
     args = parse_args()
 
-    engine_kwargs: dict = {}
+    engine_kwargs: dict = {
+        "bucket_mode": "walkforward" if args.walkforward else "full",
+        "walkforward_window": args.walkforward_window,
+    }
     if args.feature_dir is not None:
         engine_kwargs["feature_dir"] = args.feature_dir
     if args.rules is not None:
@@ -68,6 +87,8 @@ def main() -> None:
         best_only=not args.all_matches,
     )
 
+    mode = "walkforward" if args.walkforward else "full-history"
+    print(f"Bucket mode: {mode}")
     print(f"Loaded {len(engine.rules)} rules")
     print(f"Matched {len(signals)} checkpoint signals")
 
@@ -83,12 +104,15 @@ def main() -> None:
             [
                 "date",
                 "checkpoint_minute",
+                "checkpoint_clock",
                 "rule_id",
+                "source_rule_id",
+                "timeframe",
                 "side",
+                "required_break_direction",
                 "confidence",
                 "entry_price",
                 "target_50",
-                "target_100",
                 "stop_price",
             ]
         ].to_string(index=False)

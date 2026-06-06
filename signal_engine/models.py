@@ -14,6 +14,11 @@ class SignalRule:
     pct_100_before_opposite: float
     pct_opposite_break: float
     edge_score: float
+    stable_id: str = ""
+    source_rule_id: str = ""
+    source_checkpoint_minute: int = 0
+    checkpoint_clock: str = ""
+    timeframe: str = ""
     median_minutes_to_50: float | None = None
     median_minutes_to_100: float | None = None
     sessions: int = 0
@@ -31,10 +36,15 @@ class TradeSignal:
     confidence: float
     entry_price: float
     entry_trigger: str
+    required_break_direction: str
     target_50: float
     target_100: float
     stop_price: float | None
     stop_reason: str
     ib_high: float | None
     ib_low: float | None
-    stats: dict[str, float | int | None] = field(default_factory=dict)
+    stable_id: str = ""
+    checkpoint_clock: str = ""
+    source_rule_id: str = ""
+    timeframe: str = ""
+    stats: dict[str, float | int | None | str] = field(default_factory=dict)

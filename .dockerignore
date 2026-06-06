@@ -1,0 +1,15 @@
+venv/
+.env
+.git/
+__pycache__/
+*.pyc
+live/
+logs/
+*.swp
+nifty-banknifty-intraday-data/
+banknifty_master.csv
+banknifty.csv
+banknifty_180d.csv
+banknifty_tick_ten.csv
+features/
+research/outputs/

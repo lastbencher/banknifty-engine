@@ -1,3 +1,4 @@
+# Superseded by update_pipeline.py (fetch + merge + features + daily cron).
 import pandas as pd
 
 print("=" * 70)

@@ -1,11 +1,16 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import pandas as pd
 
-from signal_engine.features import prepare_checkpoint_frame, row_matches_conditions
+from signal_engine.features import (
+    BucketMode,
+    prepare_checkpoint_frame,
+    pressure_bucket,
+    row_matches_conditions,
+)
 from signal_engine.models import SignalRule, TradeSignal
 from signal_engine.rules import load_rules
 
@@ -21,9 +26,15 @@ class SignalEngine:
         *,
         feature_dir: Path = DEFAULT_FEATURE_DIR,
         rules_path: Path | None = None,
+        bucket_mode: BucketMode = "full",
+        walkforward_min_sessions: int = 60,
+        walkforward_window: int = 252,
     ) -> None:
         self.rules = rules if rules is not None else load_rules(rules_path)
         self.feature_dir = feature_dir
+        self.bucket_mode = bucket_mode
+        self.walkforward_min_sessions = walkforward_min_sessions
+        self.walkforward_window = walkforward_window
         self._daily: pd.DataFrame | None = None
         self._checkpoints: pd.DataFrame | None = None
         self._prepared: pd.DataFrame | None = None
@@ -37,7 +48,13 @@ class SignalEngine:
             self.feature_dir / "checkpoint_features.csv",
             parse_dates=["date", "checkpoint_time"],
         )
-        self._prepared = prepare_checkpoint_frame(self._daily, self._checkpoints)
+        self._prepared = prepare_checkpoint_frame(
+            self._daily,
+            self._checkpoints,
+            bucket_mode=self.bucket_mode,
+            walkforward_min_sessions=self.walkforward_min_sessions,
+            walkforward_window=self.walkforward_window,
+        )
 
     @property
     def prepared(self) -> pd.DataFrame:
@@ -54,7 +71,12 @@ class SignalEngine:
             return None
         if not row_matches_conditions(row, rule.conditions):
             return None
-        return self._build_signal(row, rule)
+
+        side, direction = self._infer_side(row, rule)
+        if side not in {"LONG", "SHORT"}:
+            return None
+
+        return self._build_signal(row, rule, side, direction)
 
     def evaluate_checkpoint(
         self,
@@ -109,12 +131,18 @@ class SignalEngine:
 
         return signals
 
-    def _build_signal(self, row: pd.Series, rule: SignalRule) -> TradeSignal:
-        side, direction = self._infer_side(row, rule)
+    def _build_signal(
+        self,
+        row: pd.Series,
+        rule: SignalRule,
+        side: str,
+        direction: str,
+    ) -> TradeSignal:
         entry_price = float(row["checkpoint_close"])
         ib_high = _optional_float(row.get("ib_high"))
         ib_low = _optional_float(row.get("ib_low"))
         stop_price, stop_reason = self._stop_plan(side, ib_high, ib_low)
+        required_break = "HIGH" if side == "LONG" else "LOW"
 
         if side == "LONG":
             target_50 = entry_price + TARGET_POINTS[0]
@@ -130,18 +158,23 @@ class SignalEngine:
             checkpoint_minute=int(row["checkpoint_minute"]),
             checkpoint_time=row.get("checkpoint_time"),
             rule_id=rule.rule_id,
+            stable_id=rule.stable_id,
             rule=rule.rule,
             direction=direction,
             side=side,
             confidence=confidence,
             entry_price=entry_price,
             entry_trigger="FIRST_IB_BREAK",
+            required_break_direction=required_break,
             target_50=target_50,
             target_100=target_100,
             stop_price=stop_price,
             stop_reason=stop_reason,
             ib_high=ib_high,
             ib_low=ib_low,
+            checkpoint_clock=rule.checkpoint_clock or str(row.get("checkpoint_clock", "")),
+            source_rule_id=rule.source_rule_id or rule.rule_id,
+            timeframe=rule.timeframe,
             stats={
                 "pct_50_before_opposite": rule.pct_50_before_opposite,
                 "pct_100_before_opposite": rule.pct_100_before_opposite,
@@ -155,22 +188,20 @@ class SignalEngine:
 
     @staticmethod
     def _infer_side(row: pd.Series, rule: SignalRule) -> tuple[str, str]:
-        opening = str(row.get("opening_direction", "UNKNOWN"))
-
+        """Side from opening momentum only — gap_direction is a filter, not a trade direction."""
         if "opening_direction" in rule.conditions:
             opening = rule.conditions["opening_direction"]
+        else:
+            opening = str(row.get("opening_direction", "UNKNOWN"))
 
-        if opening == "UP":
+        if opening in {"UP", "DOWN"}:
+            return ("LONG", "UP") if opening == "UP" else ("SHORT", "DOWN")
+
+        pressure = pressure_bucket(row.get("close_position_in_range_so_far"))
+        if pressure == "UPPER_THIRD":
             return "LONG", "UP"
-        if opening == "DOWN":
+        if pressure == "LOWER_THIRD":
             return "SHORT", "DOWN"
-
-        if "gap_direction" in rule.conditions:
-            gap = rule.conditions["gap_direction"]
-            if gap == "UP":
-                return "LONG", "UP"
-            if gap == "DOWN":
-                return "SHORT", "DOWN"
 
         return "FLAT", opening
 

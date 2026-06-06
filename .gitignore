@@ -5,3 +5,7 @@ venv/
 *.csv
 *.txt
 nifty-banknifty-intraday-data/
+*.swp
+logs/
+live/
+requirements-cloud.txt

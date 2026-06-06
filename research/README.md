@@ -46,10 +46,13 @@ Curated Phase 2B rules live in `config/signal_rules.json`. The engine evaluates 
 
 ```bash
 python run_signal_scan.py --last 20
+python run_signal_scan.py --walkforward --last 20   # honest buckets (no look-ahead)
 python run_signal_scan.py --start 2025-01-01 --output research/outputs/signal_scan_history.csv
 ```
 
-Each signal includes side, confidence, 50/100 pt targets, and opposite-IB stop (entry trigger: first IB break).
+Each signal includes side, confidence, 50/100 pt targets, opposite-IB stop, and `required_break_direction` (HIGH for LONG, LOW for SHORT — the live runner must confirm the first IB break matches before entry).
+
+**Bucket modes:** Default `full` matches Phase 2B research (in-sample quartiles). Use `--walkforward` for backtests — quartiles are computed from trailing 252 sessions only.
 
 ## Key findings (2,773 sessions, 2015–2026)
 

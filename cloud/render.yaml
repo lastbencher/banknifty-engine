@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: banknifty-telegram-bot
+    runtime: docker
+    dockerfilePath: ./cloud/Dockerfile
+    dockerContext: ..
+    plan: starter
+    envVars:
+      - key: API_TOKEN
+        sync: false
+      - key: API_SECRET
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: GITHUB_REPO
+        value: lastbencher/banknifty-engine
+      - key: GITHUB_DATA_BRANCH
+        value: data
