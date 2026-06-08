@@ -4,8 +4,8 @@ __pycache__/
 venv/
 *.csv
 *.txt
+!requirements-cloud.txt
 nifty-banknifty-intraday-data/
 *.swp
 logs/
 live/
-requirements-cloud.txt
