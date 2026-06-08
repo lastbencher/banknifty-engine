@@ -1,0 +1,25 @@
+# Run on Oracle VM (or any Linux host with Docker):
+#   cd ~/banknifty-engine && docker compose -f cloud/docker-compose.yml up -d --build
+services:
+  bnf-bot:
+    build:
+      context: ..
+      dockerfile: cloud/Dockerfile
+    container_name: bnf-telegram-bot
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    volumes:
+      - bnf-data:/app/live
+      - bnf-features:/app/features
+      - bnf-research:/app/research/outputs
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  bnf-data:
+  bnf-features:
+  bnf-research:
