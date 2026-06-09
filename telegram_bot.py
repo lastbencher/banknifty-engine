@@ -146,7 +146,10 @@ def handle_otp(otp: str) -> str:
 
 def handle_update_cached() -> str:
     send_message("Running update with cached session…")
-    code, output = run_script(UPDATE_SCRIPT)
+    extra: list[str] = []
+    if os.getenv("BNF_SKIP_FEATURES", "").strip().lower() in {"1", "true", "yes"}:
+        extra.append("--skip-features")
+    code, output = run_script(UPDATE_SCRIPT, *extra)
     status = data_status()
     if code == 0:
         msg = f"✅ Update complete (cached session)\n\n{status}"
