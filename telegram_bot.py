@@ -69,8 +69,17 @@ def data_status() -> str:
     if not master.exists():
         return "No banknifty_master.csv yet."
 
-    df = pd.read_csv(master, parse_dates=["datetime"], usecols=["datetime"])
-    last = df["datetime"].max()
+    # Read only the tail — full pd.read_csv on ~1M rows takes 30s+ on 1GB cloud VMs.
+    with master.open("rb") as fh:
+        fh.seek(0, 2)
+        size = fh.tell()
+        fh.seek(max(0, size - 16_384))
+        lines = fh.read().decode(errors="ignore").strip().splitlines()
+    if len(lines) < 2:
+        return "banknifty_master.csv is empty."
+    last_line = lines[-1]
+    last_str = last_line.split(",", 1)[0].strip()
+    last = pd.Timestamp(last_str)
     today = pd.Timestamp.now(tz=IST).date()
     lag = (today - last.date()).days
 
@@ -148,9 +157,7 @@ def handle_update_cached() -> str:
 
 
 def handle_status() -> str:
-    msg = f"📊 Status\n\n{data_status()}"
-    send_message(msg)
-    return msg
+    return f"📊 Status\n\n{data_status()}"
 
 
 def handle_signals() -> str:
@@ -158,13 +165,11 @@ def handle_signals() -> str:
     from publish_to_github import export_latest_signals, format_signals_telegram
 
     export_latest_signals()
-    msg = format_signals_telegram()
-    send_message(msg)
-    return msg
+    return format_signals_telegram()
 
 
 def handle_help() -> str:
-    msg = (
+    return (
         "Bank Nifty remote control\n\n"
         "/otp 482913 — SMS OTP → update + signals + GitHub\n"
         "482913 — same (6 digits)\n"
@@ -172,10 +177,8 @@ def handle_help() -> str:
         "/update — cached session update\n"
         "/status — data freshness\n"
         "/help — this message\n\n"
-        "Mac off? Deploy cloud/Dockerfile to Railway/Render."
+        "Running on Oracle cloud — Mac can stay off."
     )
-    send_message(msg)
-    return msg
 
 
 def dispatch(text: str) -> str | None:
@@ -230,7 +233,7 @@ def poll_loop(offset: int = 0) -> None:
 
                 logging.info("Message: %s", text[:20])
                 reply = dispatch(text)
-                if reply and not reply.startswith("✅") and not reply.startswith("❌"):
+                if reply and not reply.startswith(("✅", "❌")):
                     send_message(reply)
 
         except Exception:
