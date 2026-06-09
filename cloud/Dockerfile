@@ -13,7 +13,7 @@ COPY bnf_research/ bnf_research/
 COPY signal_engine/ signal_engine/
 COPY config/ config/
 COPY research/ research/
-COPY feature_factory.py update_pipeline.py telegram_bot.py telegram_notify.py live_tick_feed.py ./
+COPY feature_factory.py update_pipeline.py view_engine.py telegram_bot.py telegram_notify.py live_tick_feed.py ./
 COPY scripts/ scripts/
 COPY cloud/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh

@@ -297,6 +297,49 @@ class ViewEngine:
         return float(np.clip(rate, 0.05, 0.95))
 
 
+def format_session_telegram(
+    date_value: str,
+    *,
+    feature_dir: Path = DEFAULT_FEATURE_DIR,
+    layers: tuple[str, ...] = ("QUICK", "CONFIRMED", "CONVICTION"),
+) -> str:
+    """Compact Telegram summary — one anchor view per maturity band."""
+    engine = ViewEngine(feature_dir)
+    views = engine.view_for_date(date_value)
+    if not views:
+        return f"No views for {date_value} (features may still be rebuilding)."
+
+    picked: dict[str, SessionView] = {}
+    for view in views:
+        if view.layer not in layers:
+            continue
+        if view.layer not in picked or view.checkpoint_minute > picked[view.layer].checkpoint_minute:
+            picked[view.layer] = view
+
+    lines = [f"📈 Session view — {date_value}"]
+    for layer in layers:
+        view = picked.get(layer)
+        if not view:
+            continue
+        extra = f" | {view.day_type}" if view.day_type else ""
+        lines.append(
+            f"{layer} @ {view.checkpoint_clock} ({view.cadence})\n"
+            f"  {view.bias}{extra} | trend {view.trend_probability:.0%} | "
+            f"opp break {view.opposite_break_probability:.0%}"
+        )
+    return "\n".join(lines)
+
+
+def latest_view_date(feature_dir: Path = DEFAULT_FEATURE_DIR) -> str | None:
+    daily_path = feature_dir / "daily_features.csv"
+    if not daily_path.exists():
+        return None
+    df = pd.read_csv(daily_path, parse_dates=["date"])
+    if df.empty:
+        return None
+    return pd.Timestamp(df["date"].max()).strftime("%Y-%m-%d")
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate session views from checkpoint features.")
     parser.add_argument("--feature-dir", type=Path, default=DEFAULT_FEATURE_DIR)

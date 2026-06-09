@@ -9,8 +9,6 @@ services:
     restart: unless-stopped
     env_file:
       - ../.env
-    environment:
-      BNF_SKIP_FEATURES: "1"
     volumes:
       - bnf-data:/app/live
       - bnf-features:/app/features

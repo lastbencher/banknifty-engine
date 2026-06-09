@@ -6,13 +6,16 @@ LOCAL (Mac must be on):
   ./scripts/install_telegram_bot.sh
 
 CLOUD (Mac can be off — recommended):
-  Deploy cloud/Dockerfile to Railway / Render / Fly.io / Oracle free tier.
+  Oracle Always Free VM + cloud/Dockerfile
   Set env: API_TOKEN, API_SECRET, TELEGRAM_*, GITHUB_TOKEN, GITHUB_REPO
   Whitelist the cloud server IP in Definedge → API Config.
 
 From Telegram:
-  /otp 482913  — login + update + signals + GitHub publish
-  /signals     — recent signals
+  /otp 482913  — login + update + GitHub publish (+ GHA rebuild on 1GB VM)
+  /update      — cached session update
+  /signals     — recent trade signals
+  /view        — Quick / Confirmed / Conviction session read
+  /sync        — pull latest features from GitHub data branch
   /status      — data freshness
 """
 from __future__ import annotations
@@ -106,16 +109,19 @@ def run_script(script: Path, *args: str, timeout: int = 900) -> tuple[int, str]:
     return proc.returncode, output[-2000:]
 
 
+def skip_features_mode() -> bool:
+    load_dotenv(PROJECT_ROOT / ".env")
+    return os.getenv("BNF_SKIP_FEATURES", "").strip().lower() in {"1", "true", "yes"}
+
+
 def post_update_tasks() -> None:
     sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
     try:
-        from publish_to_github import export_latest_signals, format_signals_telegram, publish_data_branch
+        from cloud_post_update import run_post_update
 
-        export_latest_signals()
-        send_message(format_signals_telegram())
-        gh_msg = publish_data_branch()
-        if "skipped" not in gh_msg.lower():
-            send_message(f"📦 {gh_msg}")
+        for line in run_post_update():
+            if line.strip():
+                send_message(line if line.startswith(("📡", "📦", "📈", "⚠️")) else f"📦 {line}")
     except Exception:
         logging.exception("Post-update tasks failed")
         send_message("⚠️ Post-update (signals/GitHub) failed — check logs")
@@ -147,15 +153,17 @@ def handle_otp(otp: str) -> str:
 def handle_update_cached() -> str:
     send_message("Running update with cached session…")
     extra: list[str] = []
-    if os.getenv("BNF_SKIP_FEATURES", "").strip().lower() in {"1", "true", "yes"}:
+    if skip_features_mode():
         extra.append("--skip-features")
     code, output = run_script(UPDATE_SCRIPT, *extra)
     status = data_status()
     if code == 0:
         msg = f"✅ Update complete (cached session)\n\n{status}"
+        send_message(msg)
+        post_update_tasks()
     else:
         msg = f"❌ Update failed — session may be expired.\nSend OTP: /otp 123456\n\n{output[-800:]}\n\n{status}"
-    send_message(msg)
+        send_message(msg)
     return msg
 
 
@@ -167,17 +175,37 @@ def handle_signals() -> str:
     sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
     from publish_to_github import export_latest_signals, format_signals_telegram
 
-    export_latest_signals()
+    if not skip_features_mode():
+        export_latest_signals()
     return format_signals_telegram()
 
 
+def handle_view() -> str:
+    from view_engine import format_session_telegram, latest_view_date
+
+    view_date = latest_view_date(PROJECT_ROOT / "features")
+    if not view_date:
+        return "No feature data yet. Run /update then /sync after GitHub rebuild."
+    return format_session_telegram(view_date, feature_dir=PROJECT_ROOT / "features")
+
+
+def handle_sync() -> str:
+    code, output = run_script(PROJECT_ROOT / "scripts" / "sync_github_data.py", "--force", timeout=300)
+    if code != 0:
+        return f"❌ Sync failed\n{output[-600:]}"
+    return f"✅ Synced from GitHub data branch\n\n{output.strip()[-800:]}"
+
+
 def handle_help() -> str:
+    skip = " (master only → GitHub Actions rebuild)" if skip_features_mode() else ""
     return (
         "Bank Nifty remote control\n\n"
-        "/otp 482913 — SMS OTP → update + signals + GitHub\n"
+        f"/otp 482913 — SMS OTP → update + GitHub{skip}\n"
         "482913 — same (6 digits)\n"
-        "/signals — recent trade signals\n"
         "/update — cached session update\n"
+        "/signals — recent trade signals\n"
+        "/view — Quick / Confirmed / Conviction read\n"
+        "/sync — pull features from GitHub data branch\n"
         "/status — data freshness\n"
         "/help — this message\n\n"
         "Running on Oracle cloud — Mac can stay off."
@@ -193,6 +221,10 @@ def dispatch(text: str) -> str | None:
         return handle_help()
     if text.startswith("/signals"):
         return handle_signals()
+    if text.startswith("/view"):
+        return handle_view()
+    if text.startswith("/sync"):
+        return handle_sync()
     if text.startswith("/status"):
         return handle_status()
     if text.startswith("/update"):

@@ -85,6 +85,8 @@ def main() -> int:
     from update_pipeline import main as update_main
 
     sys.argv = ["update_pipeline.py"]
+    if os.getenv("BNF_SKIP_FEATURES", "").strip().lower() in {"1", "true", "yes"}:
+        sys.argv.append("--skip-features")
     return update_main()
 
 

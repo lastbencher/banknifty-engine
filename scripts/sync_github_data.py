@@ -19,7 +19,7 @@ SYNC_FILES = [
 ]
 
 
-def main() -> None:
+def main(force: bool = False) -> None:
     token = os.getenv("GITHUB_TOKEN", "").strip()
     if not token:
         print("GITHUB_TOKEN not set — skip GitHub data sync")
@@ -31,7 +31,7 @@ def main() -> None:
 
     for name in SYNC_FILES:
         dest = APP / name.replace(".gz", "")
-        if dest.exists() and dest.stat().st_size > 0:
+        if not force and dest.exists() and dest.stat().st_size > 0:
             continue
 
         dest.parent.mkdir(parents=True, exist_ok=True)
@@ -52,4 +52,6 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+
+    main(force="--force" in sys.argv)

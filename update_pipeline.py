@@ -318,6 +318,15 @@ def main() -> int:
             from telegram_notify import send_message
 
             send_message(f"✅ EOD update OK\nLast bar: {master['datetime'].max()}")
+            if args.skip_features:
+                scripts = PROJECT_ROOT / "scripts"
+                if str(scripts) not in sys.path:
+                    sys.path.insert(0, str(scripts))
+                from cloud_post_update import run_post_update
+
+                for line in run_post_update():
+                    if line.strip():
+                        send_message(line)
         except Exception:
             pass
         return 0
