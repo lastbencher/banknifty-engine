@@ -1,0 +1,49 @@
+# Rebuild features + signals on GitHub runners (free).
+# Oracle bot handles Telegram + Definedge fetch; this job handles RAM-heavy work.
+name: Cloud data pipeline
+
+on:
+  schedule:
+    # 16:30 IST Mon–Fri (after market close fetch on Oracle)
+    - cron: "30 11 * * 1-5"
+  workflow_dispatch:
+  repository_dispatch:
+    types: [rebuild-data]
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: pip install -r requirements-cloud.txt
+
+      - name: Sync data from data branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/sync_from_data_branch.py
+
+      - name: Rebuild features and signals
+        run: |
+          python feature_factory.py
+          python -c "
+          import sys
+          sys.path.insert(0, 'scripts')
+          from publish_to_github import export_latest_signals
+          export_latest_signals()
+          "
+
+      - name: Publish to data branch
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPO: ${{ github.repository }}
+          GITHUB_DATA_BRANCH: data
+        run: python scripts/publish_to_github.py
