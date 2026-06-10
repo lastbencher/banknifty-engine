@@ -15,6 +15,7 @@ From Telegram:
   /update      — cached session update
   /signals     — recent trade signals
   /view        — Quick / Confirmed / Conviction session read
+  /regime      — day type + next-session S/R levels
   /sync        — pull latest features from GitHub data branch
   /status      — data freshness
 """
@@ -196,6 +197,12 @@ def handle_sync() -> str:
     return f"✅ Synced from GitHub data branch\n\n{output.strip()[-800:]}"
 
 
+def handle_regime() -> str:
+    from bnf_research.regime_report import format_regime_telegram
+
+    return format_regime_telegram()
+
+
 def handle_help() -> str:
     skip = " (master only → GitHub Actions rebuild)" if skip_features_mode() else ""
     return (
@@ -205,6 +212,7 @@ def handle_help() -> str:
         "/update — cached session update\n"
         "/signals — recent trade signals\n"
         "/view — Quick / Confirmed / Conviction read\n"
+        "/regime — day type + next-session S/R\n"
         "/sync — pull features from GitHub data branch\n"
         "/status — data freshness\n"
         "/help — this message\n\n"
@@ -223,6 +231,8 @@ def dispatch(text: str) -> str | None:
         return handle_signals()
     if text.startswith("/view"):
         return handle_view()
+    if text.startswith("/regime"):
+        return handle_regime()
     if text.startswith("/sync"):
         return handle_sync()
     if text.startswith("/status"):

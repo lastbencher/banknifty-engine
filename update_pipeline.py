@@ -156,6 +156,11 @@ def connect_definedge():
     if uid and actid and api_key and ws_key:
         logging.info("Trying cached Definedge session keys")
         conn.set_session_keys(uid, actid, api_key, ws_key)
+        # Ensure allmaster.csv is downloaded (required for symbol token lookup)
+        try:
+            next(conn.symbols)
+        except StopIteration:
+            pass
         return conn
 
     totp = get_definedge_totp()
@@ -283,6 +288,11 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--skip-fetch", action="store_true", help="Merge/rebuild only (use existing Definedge CSV)")
     parser.add_argument("--skip-features", action="store_true", help="Update master CSV only")
+    parser.add_argument(
+        "--skip-futures",
+        action="store_true",
+        help="Skip NFO futures fetch (volume/OI master)",
+    )
     parser.add_argument("-v", "--verbose", action="store_true")
     return parser.parse_args()
 
@@ -309,6 +319,18 @@ def main() -> int:
         master = merge_master(KAGGLE_PATH, definedge)
         master.to_csv(MASTER_PATH, index=False)
         logging.info("Saved %s", MASTER_PATH.name)
+
+        if not args.skip_futures:
+            try:
+                from bnf_research.futures_data import update_futures_master
+
+                fut = update_futures_master(
+                    lookback_days=args.lookback_days,
+                    skip_fetch=args.skip_fetch,
+                )
+                logging.info("Futures master updated — last bar %s", fut["datetime"].max())
+            except Exception as fut_exc:
+                logging.warning("Futures update failed (index update OK): %s", fut_exc)
 
         if not args.skip_features:
             rebuild_features(MASTER_PATH, FEATURE_DIR)

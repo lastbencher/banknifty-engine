@@ -5,3 +5,5 @@ requests>=2.31
 twisted>=24.3
 autobahn>=23.6
 numpy>=1.26
+breeze-connect>=1.0.60
+certifi>=2024.0.0

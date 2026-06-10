@@ -1,0 +1,12 @@
+{
+  "total_sessions": 2783,
+  "regime_counts": {
+    "BORING": 886,
+    "TREND": 799,
+    "CHOPPY": 592,
+    "WILD_TREND": 506
+  },
+  "hybrid_sessions": 862,
+  "impulse_legs": 7892,
+  "traps": 3308
+}

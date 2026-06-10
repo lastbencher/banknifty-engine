@@ -9,17 +9,27 @@ from bnf_research.session import SessionMeta
 from bnf_research.utils import minutes_between
 
 
-def detect_springs(
+def _session_active_after(meta: SessionMeta, active_after: pd.Timestamp | None) -> pd.Timestamp:
+    if active_after is not None:
+        return active_after
+    # Default: skip opening 15 minutes (no IB dependency)
+    return meta.session_start + pd.Timedelta(minutes=15)
+
+
+def detect_springs_at_range(
     meta: SessionMeta,
-    ib_high: float,
-    ib_low: float,
+    range_high: float,
+    range_low: float,
+    *,
+    active_after: pd.Timestamp | None = None,
 ) -> list[dict[str, Any]]:
     """
     Spring (potential buy):
-    break below IB low → return inside IB → close back above IB low.
+    break below support → return inside value range → close back above support.
     """
     events: list[dict[str, Any]] = []
-    if not meta.has_ib or meta.after_ib.empty:
+    start = _session_active_after(meta, active_after)
+    if meta.day.empty:
         return events
 
     broke_below = False
@@ -29,19 +39,19 @@ def detect_springs(
 
     for abs_pos in range(len(meta.day)):
         row = meta.day.iloc[abs_pos]
-        if row["datetime"] < meta.ib_end_time:
+        if row["datetime"] < start:
             continue
 
         if not broke_below:
-            if row["low"] < ib_low:
+            if row["low"] < range_low:
                 broke_below = True
                 break_time = row["datetime"]
                 break_pos = abs_pos
                 break_price = row["low"]
             continue
 
-        inside = ib_low <= row["close"] <= ib_high
-        if inside and row["close"] > ib_low:
+        inside = range_low <= row["close"] <= range_high
+        if inside and row["close"] > range_low:
             events.append(
                 {
                     "event_subtype": "SPRING",
@@ -52,7 +62,7 @@ def detect_springs(
                     "confirm_time": row["datetime"],
                     "confirm_pos": abs_pos,
                     "confirm_price": row["close"],
-                    "level": ib_low,
+                    "level": range_low,
                     "duration_minutes": minutes_between(break_time, row["datetime"]),
                 }
             )
@@ -61,17 +71,20 @@ def detect_springs(
     return events
 
 
-def detect_upthrusts(
+def detect_upthrusts_at_range(
     meta: SessionMeta,
-    ib_high: float,
-    ib_low: float,
+    range_high: float,
+    range_low: float,
+    *,
+    active_after: pd.Timestamp | None = None,
 ) -> list[dict[str, Any]]:
     """
     Upthrust (potential sell):
-    break above IB high → return inside IB → close back below IB high.
+    break above resistance → return inside value range → close back below resistance.
     """
     events: list[dict[str, Any]] = []
-    if not meta.has_ib or meta.after_ib.empty:
+    start = _session_active_after(meta, active_after)
+    if meta.day.empty:
         return events
 
     broke_above = False
@@ -81,19 +94,19 @@ def detect_upthrusts(
 
     for abs_pos in range(len(meta.day)):
         row = meta.day.iloc[abs_pos]
-        if row["datetime"] < meta.ib_end_time:
+        if row["datetime"] < start:
             continue
 
         if not broke_above:
-            if row["high"] > ib_high:
+            if row["high"] > range_high:
                 broke_above = True
                 break_time = row["datetime"]
                 break_pos = abs_pos
                 break_price = row["high"]
             continue
 
-        inside = ib_low <= row["close"] <= ib_high
-        if inside and row["close"] < ib_high:
+        inside = range_low <= row["close"] <= range_high
+        if inside and row["close"] < range_high:
             events.append(
                 {
                     "event_subtype": "UPTHRUST",
@@ -104,13 +117,39 @@ def detect_upthrusts(
                     "confirm_time": row["datetime"],
                     "confirm_pos": abs_pos,
                     "confirm_price": row["close"],
-                    "level": ib_high,
+                    "level": range_high,
                     "duration_minutes": minutes_between(break_time, row["datetime"]),
                 }
             )
             broke_above = False
 
     return events
+
+
+def detect_springs(
+    meta: SessionMeta,
+    ib_high: float,
+    ib_low: float,
+) -> list[dict[str, Any]]:
+    """Legacy IB-named wrapper — used by feature pipeline only."""
+    if not meta.has_ib:
+        return []
+    return detect_springs_at_range(
+        meta, ib_high, ib_low, active_after=meta.ib_end_time
+    )
+
+
+def detect_upthrusts(
+    meta: SessionMeta,
+    ib_high: float,
+    ib_low: float,
+) -> list[dict[str, Any]]:
+    """Legacy IB-named wrapper — used by feature pipeline only."""
+    if not meta.has_ib:
+        return []
+    return detect_upthrusts_at_range(
+        meta, ib_high, ib_low, active_after=meta.ib_end_time
+    )
 
 
 def detect_absorption(
