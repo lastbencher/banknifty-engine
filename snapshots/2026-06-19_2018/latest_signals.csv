@@ -1,0 +1,3 @@
+date,checkpoint_clock,rule_id,side,confidence,entry_price,target_50,target_100,required_break_direction
+2026-06-15,09:30,S1183@15m,SHORT,0.5172,57450.3984,57400.3984,57350.3984,LOW
+2026-06-15,09:45,S1183@30m,SHORT,0.5172,57458.1992,57408.1992,57358.1992,LOW
